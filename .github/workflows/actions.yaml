@@ -32,7 +32,7 @@ jobs:
         with:
           name: output
           path: output/
-      - run: ucc-gen package --path output/ta_cisco_bcs_operational_insights
+      - run: uv run ucc-gen package --path output/ta_cisco_bcs_operational_insights
       - uses: actions/upload-artifact@v4
         with:
           name: ta_cisco_bcs_operational_insights
