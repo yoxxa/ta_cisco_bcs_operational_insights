@@ -10,8 +10,8 @@
         "author": [
             {
                 "name": "Harrison Thompson Buckley (yoxxa)",
-                "email": harthomp@cisco.com,
-                "company": Cisco
+                "email": "harthomp@cisco.com",
+                "company": "Cisco"
             }
         ],
         "releaseDate": null,
