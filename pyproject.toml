@@ -6,5 +6,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
     "splunk-add-on-ucc-framework>=6.1.0",
-    "pip"
+    "pip",
+    "bcs-oi-api",
+    "stringcase"
 ]
