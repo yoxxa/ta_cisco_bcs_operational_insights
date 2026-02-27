@@ -3,7 +3,7 @@
         "configuration": {
             "tabs": [
                 {
-                    "name": "account",
+                    "name": "bcs_api_account",
                     "table": {
                         "actions": [
                             "edit",
@@ -40,22 +40,57 @@
                         },
                         {
                             "type": "text",
-                            "label": "API key",
-                            "field": "api_key",
-                            "help": "API key",
+                            "label": "Client ID",
+                            "field": "client_id",
+                            "help": "Client ID for Cisco BCS Operational Insights",
                             "required": true,
                             "encrypted": true,
                             "validators": [
                                 {
                                     "type": "string",
-                                    "errorMsg": "Length of API key should be between 1 and 50",
+                                    "errorMsg": "Length of username should be between 1 and 100",
                                     "minLength": 1,
-                                    "maxLength": 50
+                                    "maxLength": 100
                                 }
                             ]
+                        },
+                        {
+                            "type": "text",
+                            "label": "Client Secret",
+                            "field": "client_secret",
+                            "help": "Client Secret for Cisco BCS Operational Insights",
+                            "required": true,
+                            "encrypted": true,
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "errorMsg": "Length of password should be between 1 and 100",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "type": "singleSelect",
+                            "label": "Client Region",
+                            "field": "client_region",
+                            "options": {
+                                "disableSearch": true,
+                                "autoCompleteFields": [
+                                    {
+                                        "value": "us",
+                                        "label": "us"
+                                    },
+                                    {
+                                        "value": "emea",
+                                        "label": "emea"
+                                    }
+                                ]
+                            },
+                            "required": true
                         }
                     ],
-                    "title": "Accounts"
+                    "title": "BCS API Accounts"
                 },
                 {
                     "type": "loggingTab"
@@ -112,10 +147,10 @@
                             "type": "singleSelect",
                             "label": "Account to use",
                             "options": {
-                                "referenceName": "account"
+                                "referenceName": "bcs_api_account"
                             },
                             "help": "Account to use for this input.",
-                            "field": "account",
+                            "field": "bcs_api_account",
                             "required": true,
                             "validators": [
                                 {
@@ -192,7 +227,7 @@
     "meta": {
         "name": "ta_cisco_bcs_operational_insights",
         "restRoot": "ta_cisco_bcs_operational_insights",
-        "version": "0.0.0+0af0b76",
+        "version": "0.0.0+1bb9a30",
         "displayName": "Cisco BCS Operational Insights",
         "schemaVersion": "0.0.10",
         "supportedThemes": [
