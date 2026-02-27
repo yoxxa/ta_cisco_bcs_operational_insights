@@ -1,0 +1,95 @@
+import json
+import logging
+from solnlib import conf_manager, log
+from splunklib import modularinput as smi
+import splunklib.client as client
+
+ADDON_NAME = "ta_cisco_bcs_operational_insights"
+
+def logger_for_input(input_name: str) -> logging.Logger:
+    """ Get the Logger instance for the input with name `input_name` """
+    return log.Logs().get_logger(f"{ADDON_NAME.lower()}_{input_name}")
+
+def set_logger_level(inputs: dict, logger: logging.Logger) -> None:
+    """ Set logging level across input called once per input """
+    session_key = inputs.metadata["session_key"]
+    log_level = conf_manager.get_log_level(
+        logger=logger,
+        session_key=session_key,
+        app_name=ADDON_NAME,
+        conf_name=f"{ADDON_NAME}_settings",
+    )
+    logger.setLevel(log_level)
+
+def get_bcs_api_account_conf_file(inputs: dict) -> dict:
+    """
+    Returns:
+        {"client_id": "...", "client_secret": "...", "client_region": "..."}
+    """
+    session_key = inputs.metadata["session_key"]
+    cfm = conf_manager.ConfManager(
+        session_key,
+        ADDON_NAME,
+        realm=f"__REST_CREDENTIAL__#{ADDON_NAME}#configs/conf-{ADDON_NAME}_bcs_api_account",
+    )
+    account_conf_file = cfm.get_conf(f"{ADDON_NAME}_bcs_api_account")
+    return account_conf_file
+
+def send_data_to_splunk(
+    event_writer: smi.EventWriter, 
+    data: dict, 
+    logger: logging.Logger,
+    input_item: dict, 
+    input_name: str
+) -> None:
+    """ Handles normalising data into dict to send to Splunk """
+    for sourcetype in data:
+        # single record i.e. dict
+        if isinstance(data[sourcetype], dict):
+            event_writer.write_event(
+                smi.Event(
+                    data = json.dumps(data[sourcetype], ensure_ascii=False, default=str),
+                    index = input_item["index"],
+                    sourcetype = sourcetype,
+                )
+            )
+        # multiple records i.e. list
+        if isinstance(data[sourcetype], list):
+            for _data in data[sourcetype]:
+                event_writer.write_event(
+                    smi.Event(
+                        data = json.dumps(_data, ensure_ascii=False, default=str),
+                        index = input_item["index"],
+                        sourcetype = sourcetype,
+                    )
+                )
+        log.events_ingested(
+            logger,
+            input_name,
+            sourcetype,
+            len(data[sourcetype]),
+            input_item["index"]
+        )
+
+def save_to_kv_store(
+    kv_data: list[dict], 
+    inputs: dict, 
+    kv_collection: str, 
+    cisco_dnac_host: str
+) -> None:
+    """ Uses Splunk SDK to flush and send data to KV store collection """
+    service = client.connect(
+        token = inputs.metadata["session_key"],
+        owner = "nobody",
+        app = ADDON_NAME
+    )
+    collection = service.kvstore[kv_collection]
+    # flush out old rows
+    collection.data.delete(query = json.dumps({"cisco_host": cisco_dnac_host}))
+    if kv_data:
+        batch_size = 500 
+        for i in range(0, len(kv_data), batch_size):
+            # slice the list to get the dicts
+            chunk = kv_data[i : i + batch_size]
+            # no idea why we need to deref
+            collection.data.batch_save(*chunk)
