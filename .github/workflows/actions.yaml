@@ -1,0 +1,55 @@
+name: ta_cisco_bcs_operational_insights CI
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "*"
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.9"
+      - run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - run: uv add splunk-add-on-ucc-framework
+      - run: uv run ucc-gen build --source package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ta_cisco_bcs_operational_insights-raw-output
+          path: output/*
+      # Taken from https://github.com/splunk/addonfactory-ucc-generator-action/blob/main/action.yml.
+      # Should resolve `check_for_expansive_permissions` check from AppInspect CLI.
+      - run: chmod -R +r output
+        shell: bash
+      - run: chmod -R go-w output
+        shell: bash
+      - uses: actions/upload-artifact@v4
+        with:
+          name: output
+          path: output/
+      - run: ucc-gen package --path output/ta_cisco_bcs_operational_insights
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ta_cisco_bcs_operational_insights
+          path: ta_cisco_bcs_operational_insights*.tar.gz
+
+  splunk-appinspect-cli:
+    name: splunk-appinspect-cli
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v4
+        with:
+          name: ta_cisco_bcs_operational_insights
+          path: build/package
+      - uses: splunk/appinspect-cli-action@v2.11
+        with:
+          app_path: build/package
